@@ -4,7 +4,7 @@ from typing import AsyncGenerator
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.cache.redis.lifespan import init_redis, shutdown_redis
+from app.cache.base import pool
 from app.settings import settings
 
 
@@ -43,10 +43,10 @@ async def lifespan_setup(
 
     app.middleware_stack = None
     _setup_db(app)
-    init_redis(app)
+    app.state.redis_pool = pool
     app.middleware_stack = app.build_middleware_stack()
 
     yield
     await app.state.db_engine.dispose()
 
-    await shutdown_redis(app)
+    await pool.disconnect()

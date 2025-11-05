@@ -5,6 +5,7 @@ from fakeredis import FakeServer
 from fakeredis.aioredis import FakeConnection
 from fastapi import FastAPI
 from httpx import AsyncClient
+from pytest import MonkeyPatch
 from redis.asyncio import ConnectionPool
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -14,7 +15,7 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from app.api.application import get_app
-from app.cache.redis.dependency import get_redis_pool
+from app.cache import base as cache_base
 from app.db.dependencies import get_db_session
 from app.db.utils import create_database, drop_database
 from app.settings import settings
@@ -101,10 +102,15 @@ async def fake_redis_pool() -> AsyncGenerator[ConnectionPool, None]:
     await pool.disconnect()
 
 
+@pytest.fixture(autouse=True)
+def mock_redis_pool(monkeypatch: MonkeyPatch, fake_redis_pool: ConnectionPool) -> None:
+    """Mock redis pool for tests."""
+    monkeypatch.setattr(cache_base, "pool", fake_redis_pool)
+
+
 @pytest.fixture
 def fastapi_app(
     dbsession: AsyncSession,
-    fake_redis_pool: ConnectionPool,
 ) -> FastAPI:
     """
     Fixture for creating FastAPI app.
@@ -113,7 +119,6 @@ def fastapi_app(
     """
     application = get_app()
     application.dependency_overrides[get_db_session] = lambda: dbsession
-    application.dependency_overrides[get_redis_pool] = lambda: fake_redis_pool
     return application
 
 
