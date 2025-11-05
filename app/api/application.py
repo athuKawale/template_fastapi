@@ -5,9 +5,9 @@ from fastapi import FastAPI
 from fastapi.responses import UJSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.api.lifespan import lifespan_setup
+from app.api.v1.router import api_router
 from app.log import configure_logging
-from app.web.api.router import api_router
-from app.web.lifespan import lifespan_setup
 
 APP_ROOT = Path(__file__).parent.parent
 
