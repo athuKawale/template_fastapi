@@ -11,7 +11,7 @@ async def get_db_session(request: Request) -> AsyncGenerator[AsyncSession, None]
     :param request: current request.
     :yield: database session.
     """
-    session: AsyncSession = request.app.state.db_session_factory()
+    session: AsyncSession = request.app.state.db_factory.get_session()
 
     try:
         yield session

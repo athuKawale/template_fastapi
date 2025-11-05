@@ -5,7 +5,6 @@ from fakeredis import FakeServer
 from fakeredis.aioredis import FakeConnection
 from fastapi import FastAPI
 from httpx import AsyncClient
-from pytest import MonkeyPatch
 from redis.asyncio import ConnectionPool
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -15,8 +14,9 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from app.api.application import get_app
-from app.cache import base as cache_base
+from app.cache.factory import RedisFactory
 from app.db.dependencies import get_db_session
+from app.db.factory import DatabaseFactory
 from app.db.utils import create_database, drop_database
 from app.settings import settings
 
@@ -102,15 +102,37 @@ async def fake_redis_pool() -> AsyncGenerator[ConnectionPool, None]:
     await pool.disconnect()
 
 
-@pytest.fixture(autouse=True)
-def mock_redis_pool(monkeypatch: MonkeyPatch, fake_redis_pool: ConnectionPool) -> None:
-    """Mock redis pool for tests."""
-    monkeypatch.setattr(cache_base, "pool", fake_redis_pool)
+class FakeDatabaseFactory(DatabaseFactory):
+    """Fake database factory."""
+
+    def __init__(self, engine: AsyncEngine) -> None:
+        super().__init__("", False)
+        self.engine = engine
+        self.session_factory = async_sessionmaker(
+            self.engine,
+            expire_on_commit=False,
+        )
+
+    async def close(self) -> None:
+        """Close connection."""
+
+
+class FakeRedisFactory(RedisFactory):
+    """Fake redis factory."""
+
+    def __init__(self, pool: ConnectionPool) -> None:
+        super().__init__("")
+        self.pool = pool
+
+    async def close(self) -> None:
+        """Close connection."""
 
 
 @pytest.fixture
 def fastapi_app(
     dbsession: AsyncSession,
+    _engine: AsyncEngine,
+    fake_redis_pool: ConnectionPool,
 ) -> FastAPI:
     """
     Fixture for creating FastAPI app.
@@ -118,7 +140,9 @@ def fastapi_app(
     :return: fastapi app with mocked dependencies.
     """
     application = get_app()
+    application.state.db_factory = FakeDatabaseFactory(_engine)
     application.dependency_overrides[get_db_session] = lambda: dbsession
+    application.state.redis_factory = FakeRedisFactory(fake_redis_pool)
     return application
 
 

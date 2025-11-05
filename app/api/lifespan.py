@@ -2,29 +2,10 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 from fastapi import FastAPI
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.cache.base import pool
+from app.cache.factory import RedisFactory
+from app.db.factory import DatabaseFactory
 from app.settings import settings
-
-
-def _setup_db(app: FastAPI) -> None:  # pragma: no cover
-    """
-    Creates connection to the database.
-
-    This function creates SQLAlchemy engine instance,
-    session_factory for creating sessions
-    and stores them in the application's state property.
-
-    :param app: fastAPI application.
-    """
-    engine = create_async_engine(str(settings.db_url), echo=settings.db_echo)
-    session_factory = async_sessionmaker(
-        engine,
-        expire_on_commit=False,
-    )
-    app.state.db_engine = engine
-    app.state.db_session_factory = session_factory
 
 
 @asynccontextmanager
@@ -42,11 +23,13 @@ async def lifespan_setup(
     """
 
     app.middleware_stack = None
-    _setup_db(app)
-    app.state.redis_pool = pool
+    db_factory = DatabaseFactory(str(settings.db_url), settings.db_echo)
+    redis_factory = RedisFactory(str(settings.redis_url))
+    app.state.db_factory = db_factory
+    app.state.redis_factory = redis_factory
     app.middleware_stack = app.build_middleware_stack()
 
     yield
-    await app.state.db_engine.dispose()
 
-    await pool.disconnect()
+    await app.state.db_factory.close()
+    await app.state.redis_factory.close()
