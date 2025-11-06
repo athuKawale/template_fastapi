@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     # Enable uvicorn reloading
     reload: bool = False
 
+    # Enable debug mode
+    debug: bool = False
+
     # Current environment
     environment: str = "dev"
 

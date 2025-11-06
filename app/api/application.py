@@ -4,10 +4,12 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import UJSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.api.lifespan import lifespan_setup
 from app.api.v1.router import api_router
-from app.log import configure_logging
+from app.core.logging.log import configure_logging
+from app.core.middleware.logging_middleware import logging_middleware
 
 APP_ROOT = Path(__file__).parent.parent
 
@@ -30,6 +32,8 @@ def get_app() -> FastAPI:
         openapi_url="/api/openapi.json",
         default_response_class=UJSONResponse,
     )
+
+    app.add_middleware(BaseHTTPMiddleware, dispatch=logging_middleware)
 
     # Main router for the API.
     app.include_router(router=api_router, prefix="/api")
