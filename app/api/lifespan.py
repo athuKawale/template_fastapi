@@ -1,0 +1,35 @@
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
+
+from fastapi import FastAPI
+
+from app.cache.factory import RedisFactory
+from app.db.factory import DatabaseFactory
+from app.settings import settings
+
+
+@asynccontextmanager
+async def lifespan_setup(
+    app: FastAPI,
+) -> AsyncGenerator[None, None]:  # pragma: no cover
+    """
+    Actions to run on application startup.
+
+    This function uses fastAPI app to store data
+    in the state, such as db_engine.
+
+    :param app: the fastAPI application.
+    :return: function that actually performs actions.
+    """
+
+    app.middleware_stack = None
+    db_factory = DatabaseFactory(str(settings.db_url), settings.db_echo)
+    redis_factory = RedisFactory(str(settings.redis_url))
+    app.state.db_factory = db_factory
+    app.state.redis_factory = redis_factory
+    app.middleware_stack = app.build_middleware_stack()
+
+    yield
+
+    await app.state.db_factory.close()
+    await app.state.redis_factory.close()
