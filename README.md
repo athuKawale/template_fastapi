@@ -161,3 +161,56 @@ docker run -p "5432:5432" -e "POSTGRES_PASSWORD=app" -e "POSTGRES_USER=app" -e "
 ```bash
 pytest -vv .
 ```
+
+## Logging
+
+This application uses [Loguru](https://loguru.readthedocs.io/en/stable/) for structured and configurable logging.
+
+### Log Files and Rotation
+
+Logs are stored in the `logs/` directory at the root of the project. The following log files are generated:
+
+*   `logs/access.log`: Contains access logs for all incoming HTTP requests.
+*   `logs/error.log`: Records all logs with a severity level of `ERROR` or higher.
+*   `logs/debug.log`: Contains debug-level logs. This file is only created when debug mode is enabled.
+
+All log files are automatically rotated on a daily basis.
+
+### Configuration
+
+You can enable debug logging by setting the following environment variable in your `.env` file:
+
+```bash
+APP_DEBUG="True"
+```
+
+When `APP_DEBUG` is set to `True`, detailed debug messages will be written to `logs/debug.log`.
+
+### How to Use the Logger
+
+To add logging to your code, import the `logger` object from `loguru` and call the appropriate method for the desired severity level.
+
+```python
+from loguru import logger
+
+def my_function():
+    logger.info("This is an informational message.")
+    logger.debug("This is a debug message.")
+    logger.warning("This is a warning.")
+    logger.error("An error occurred.")
+```
+
+### Access Logs
+
+Access logs are generated automatically for every incoming HTTP request. They are formatted to include detailed information about the request:
+
+```
+<client_ip> - "<method> <path>?<query_params> HTTP/1.1" <status_code> - Headers: <headers> - Process Time: <process_time>
+```
+
+An example log entry looks like this:
+
+```
+127.0.0.1 - "GET /api/v1/monitoring/health HTTP/1.1" 200 - Headers: {'host': 'localhost:8000', ...} - Process Time: 0.45ms
+```
+
