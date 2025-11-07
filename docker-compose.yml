@@ -22,7 +22,7 @@ services:
       APP_REDIS_HOST: app-redis
 
   db:
-    image: postgres:16.3-bullseye
+    image: postgres:17
     hostname: app-db
     environment:
       POSTGRES_PASSWORD: "app"
@@ -36,7 +36,7 @@ services:
       interval: 2s
       timeout: 3s
       retries: 40
-
+    
   migrator:
     image: app:${APP_VERSION:-latest}
     restart: "no"
@@ -52,7 +52,7 @@ services:
         condition: service_healthy
 
   redis:
-    image: bitnami/redis:6.2.5
+    image: redis:8
     hostname: "app-redis"
     restart: always
     environment:

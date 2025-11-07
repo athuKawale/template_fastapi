@@ -26,6 +26,7 @@ aiofiles = "^24.1.0"
 httptools = "^0.6.4"
 pymongo = "^4.10.1"
 loguru = "^0.7.3"
+aiosqlite = "^0.21.0"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -71,10 +72,6 @@ filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
     "ignore:.*unclosed.*:ResourceWarning",
-]
-env = [
-    "APP_ENVIRONMENT=pytest",
-    "APP_DB_BASE=app_test",
 ]
 
 [tool.ruff]
@@ -132,7 +129,8 @@ line-length = 88
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = [
-    "S101", # Use of assert detected
+    "S101",
+    "D", # Use of assert detected
 ]
 
 [tool.ruff.lint.pydocstyle]

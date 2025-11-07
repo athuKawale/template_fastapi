@@ -29,7 +29,8 @@ async def lifespan_setup(
     app.state.redis_factory = redis_factory
     app.middleware_stack = app.build_middleware_stack()
 
-    yield
-
-    await app.state.db_factory.close()
-    await app.state.redis_factory.close()
+    try:
+        yield
+    finally:
+        await app.state.db_factory.close()
+        await app.state.redis_factory.close()
